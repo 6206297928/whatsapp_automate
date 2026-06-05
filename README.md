@@ -21,11 +21,11 @@ It's effectively an **autonomous helpdesk + procurement broker living inside Wha
 | **Autonomous tool orchestration** | An `LlmAgent` decides which of 9 tools to call, and in what order, based on context (customer vs. vendor, image present, valid query). |
 | **Multimodal perception** | Gemini Vision OCR extracts fabric specs (Sort No, composition, EPIxPPI, weave) from tag photos. |
 | **Function calling** | 9 real side-effecting tools: DB reads/writes, ticket generation, outbound WhatsApp. |
-| **Long-term memory** | `auto_save_to_memory()` persists every turn; `preload_memory` recalls prior conversations. |
+| **Dual-layer memory** | `InMemorySessionService` (per-session working memory) + `InMemoryMemoryService` (cross-session recall); `auto_save_to_memory()` persists every turn, `preload_memory` recalls prior conversations. |
 | **Context optimization** | `EventsCompactionConfig(compaction_interval=3, overlap_size=1)` compacts history every 3 turns. |
 | **Reliability** | Retry with exponential backoff on 429/500/503/504. |
 | **Observability** | Built-in ADK `LoggingPlugin` traces every decision and tool call. |
-| **Stateless scaling** | Fresh session per message, destroyed after — auto-scales to zero. |
+| **Stateful runtime** | RAM-backed state retained across requests until process restart; drop-in upgrade path to durable backends. |
 
 ---
 
@@ -53,6 +53,32 @@ WeavedeskV5_Production  (LlmAgent · gemini-2.5-flash)
         ▼
 PostgreSQL  ──  persons · tickets · ticket_vendors
 ```
+
+---
+
+## Agentic AI engineering
+
+End-to-end agent architecture techniques implemented in this project:
+
+**1. Agent Orchestration Layer** — A reasoning-driven `LlmAgent` (`WeavedeskV5_Production`) that autonomously plans and sequences tool calls based on runtime context, with no hardcoded control flow. ADK `App` + `Runner` manage the execution lifecycle.
+
+**2. Tool Calling / Function Calling** — 9 structured tools (DB reads/writes, OCR, classification, validation, outbound messaging) exposed to the LLM as typed callable functions. Tools share state via `ToolContext`, enabling stateful multi-step workflows.
+
+**3. Context Engineering — Compaction** — `EventsCompactionConfig(compaction_interval=3, overlap_size=1)` compacts conversation history every 3 turns with 1-turn overlap, preventing token-context bloat while preserving continuity.
+
+**4. Dual-Layer Memory Management**
+- *Per-session (working) memory:* `InMemorySessionService` — isolated state within a single invocation (image data, user identity, classifier results).
+- *Cross-session (long-term) memory:* `InMemoryMemoryService` + an `after_agent_callback` (`auto_save_to_memory`) persisting every turn, with `preload_memory` for recall across sessions.
+
+**5. Multimodal Perception (Vision)** — Gemini Vision OCR (`extract_text_from_image`) extracts structured data from images, fusing visual + textual context into the agent's reasoning.
+
+**6. Structured Prompt Engineering** — 4 specialized system prompts (root orchestrator + 3 task-specific JSON-constrained classifiers/extractors) enforcing deterministic, parseable LLM outputs.
+
+**7. Reliability & Resilience** — LLM-call retry with exponential backoff (5 attempts) handling rate-limit/transient errors (HTTP 429/500/503/504).
+
+**8. Observability** — ADK `LoggingPlugin` traces agent decisions, tool invocations, and model calls.
+
+**9. Stateful In-Memory Runtime** — Both state layers are RAM-backed, making the system stateful for the lifetime of the running process: per-session and cross-session memory persist across requests until the process restarts. Architected for drop-in upgrade to durable backends (`DatabaseSessionService` / `VertexAiMemoryBankService`) for cross-restart, multi-instance persistence.
 
 ---
 
