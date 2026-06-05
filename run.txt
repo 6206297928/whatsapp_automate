@@ -1,0 +1,1 @@
+Run adk web UI: DATABASE_URL="postgresql://myuser:mypassword@localhost:5432/mydb" uv run adk web --log_level DEBUG
