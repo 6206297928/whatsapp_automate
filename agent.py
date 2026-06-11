@@ -29,10 +29,20 @@ logging.basicConfig(level=logging.INFO)
 
 # 1. Automatic Memory Ingestion Callback (V5 Feature)
 async def auto_save_to_memory(callback_context):
-    """Saves every turn to long-term memory automatically."""
-    await callback_context._invocation_context.memory_service.add_session_to_memory(
-        callback_context._invocation_context.session
-    )
+    """Saves every turn to long-term memory automatically.
+
+    Defensive: when deployed to Vertex AI Agent Engine, a memory service is only
+    present if Memory Bank is enabled. Skip gracefully if it is unavailable so the
+    agent keeps working with session-only memory.
+    """
+    try:
+        memory_service = callback_context._invocation_context.memory_service
+        if memory_service is not None:
+            await memory_service.add_session_to_memory(
+                callback_context._invocation_context.session
+            )
+    except Exception as exc:  # noqa: BLE001 - never let memory save break a turn
+        logging.warning(f"Skipped long-term memory save: {exc}")
 
 # 2. Agent Definition
 root_agent = LlmAgent(
