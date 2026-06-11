@@ -19,6 +19,7 @@ from .tools import (
     classify_customer_message,
     validate_vendor_reply,
     create_ticket,
+    fetch_my_tickets,
     fetch_ticket_by_number,
     update_ticket_vendor,
     send_whatsapp_message,
@@ -61,6 +62,7 @@ root_agent = LlmAgent(
         classify_customer_message,
         validate_vendor_reply,
         create_ticket,
+        fetch_my_tickets,
         fetch_ticket_by_number,
         update_ticket_vendor,
         send_whatsapp_message

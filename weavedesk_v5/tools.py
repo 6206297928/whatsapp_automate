@@ -95,6 +95,29 @@ async def create_ticket(tool_context: ToolContext, customer_message: str, custom
                 "broadcast_to_vendors": len(assigned), "vendors": assigned}
     finally: session.close()
 
+async def fetch_my_tickets(tool_context: ToolContext, phone: str = "") -> Dict[str, Any]:
+    """Return the CURRENT customer's existing tickets (most recent first).
+
+    Use this when a customer asks about their own ticket(s)/order/status or forgot
+    their ticket number. Identifies the customer from session state (set by
+    fetch_user/register_user); falls back to the given phone.
+    """
+    state = getattr(tool_context, "state", None)
+    entity_id = state.get("sender_entity_id") if state is not None else None
+    session = get_db_session()
+    try:
+        if not entity_id and phone:
+            p = session.query(Person).filter(Person.phone == phone).first()
+            entity_id = p.entity_id if p else None
+        if not entity_id:
+            return {"error": "Customer not identified yet. Ask for their phone and call fetch_user first."}
+        tickets = session.query(Ticket).filter(Ticket.customer_id == entity_id).order_by(Ticket.created_at.desc()).all()
+        return {"count": len(tickets), "tickets": [
+            {"ticket_number": t.ticket_number, "status": t.status, "type": t.type, "message": t.customer_message}
+            for t in tickets]}
+    finally:
+        session.close()
+
 async def fetch_ticket_by_number(tool_context: ToolContext, ticket_number: str) -> Dict[str, Any]:
     session = get_db_session()
     ticket = session.query(Ticket).filter(Ticket.ticket_number == ticket_number).first()
