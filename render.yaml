@@ -1,0 +1,23 @@
+# Render Blueprint — deploy with one click via "New + > Blueprint" pointing at this repo,
+# or configure these settings manually in a Web Service.
+services:
+  - type: web
+    name: weavedesk-v5
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      # LLM — Google AI Studio free tier. Set the value in the Render dashboard.
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GOOGLE_GENAI_USE_VERTEXAI
+        value: "0"
+      - key: ADK_MODEL
+        value: gemini-2.5-flash
+      # Neon Postgres connection string (include ?sslmode=require). Set in dashboard.
+      - key: DATABASE_URL
+        sync: false

@@ -33,9 +33,8 @@ Testing is done via the Python SDK / `adk web` — **no WhatsApp bridge required
 ## Step 2 — Configure local env
 
 ```bash
-cd weavedesk_adk_v5
-cp .env.example .env
-# edit .env: paste your GEMINI_API_KEY (and GOOGLE_API_KEY), and the Neon DATABASE_URL
+cp .env.example weavedesk_v5/.env
+# edit weavedesk_v5/.env: paste GEMINI_API_KEY (and GOOGLE_API_KEY), and the Neon DATABASE_URL
 ```
 
 ## Step 3 — Initialize the database (one time)
@@ -45,7 +44,7 @@ Creates the tables and seeds one demo customer + one demo vendor:
 ```bash
 # uses DATABASE_URL from your shell/.env
 export DATABASE_URL="postgresql://user:pass@ep-xxxx.region.aws.neon.tech/dbname?sslmode=require"
-python init_db.py
+python weavedesk_v5/init_db.py
 ```
 
 Expected output:
@@ -67,15 +66,14 @@ gcloud services enable \
 
 ## Step 5 — Deploy to Agent Engine
 
-Run from the **parent** directory (so the package `weavedesk_adk_v5` is importable):
+Run from the repo root (the package `weavedesk_v5` is a subfolder here):
 
 ```bash
-cd ..
 adk deploy agent_engine \
   --project=YOUR_PROJECT_ID \
   --region=us-central1 \
-  weavedesk_adk_v5 \
-  --agent_engine_config_file=weavedesk_adk_v5/.agent_engine_config.json
+  weavedesk_v5 \
+  --agent_engine_config_file=weavedesk_v5/.agent_engine_config.json
 ```
 
 Deployment takes ~2-5 min and prints a resource name like:

@@ -95,15 +95,25 @@ End-to-end agent architecture techniques implemented in this project:
 ## Project structure
 
 ```
-weavedesk_adk_v5/
-├── agent.py        # LlmAgent definition, App, Runner, memory callback
-├── tools.py        # 9 async tools (DB, OCR, classification, WhatsApp)
-├── prompts.py      # 4 system prompts (classifier, validator, extractor, root)
-├── database.py     # SQLAlchemy ORM: Person, Ticket, TicketVendor
-├── __init__.py
-├── .gitignore
-└── README.md
+repo root/
+├── main.py              # FastAPI entry point (get_fast_api_app) — for Render
+├── requirements.txt
+├── render.yaml          # Render blueprint
+├── DEPLOY.md            # deploy to Vertex AI Agent Engine
+├── DEPLOY_RENDER.md     # deploy to Render (free)
+└── weavedesk_v5/        # the agent package (discovered as the agent)
+    ├── agent.py         # LlmAgent definition, App, Runner, memory callback
+    ├── tools.py         # 9 async tools (DB, OCR, classification, WhatsApp)
+    ├── prompts.py       # 4 system prompts (classifier, validator, extractor, root)
+    ├── database.py      # SQLAlchemy ORM: Person, Ticket, TicketVendor
+    ├── init_db.py       # one-time table creation + demo seed
+    └── __init__.py      # exposes root_agent
 ```
+
+## Deployment
+
+- **Render (free, no GCP):** see [DEPLOY_RENDER.md](DEPLOY_RENDER.md) — runs as a FastAPI service with the ADK web UI.
+- **Vertex AI Agent Engine:** see [DEPLOY.md](DEPLOY.md) — managed ADK runtime, free monthly tier.
 
 ---
 
