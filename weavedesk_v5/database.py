@@ -40,7 +40,10 @@ class TicketVendor(Base):
     status = Column(String, default='Pending')
     ticket = relationship("Ticket", back_populates="vendors")
 
-engine = create_engine(_DB_URL)
+# pool_pre_ping: transparently reconnect if a pooled connection went stale
+# (Neon serverless drops idle connections -> "SSL connection closed unexpectedly").
+# pool_recycle: drop connections older than 5 min before Neon's idle timeout hits.
+engine = create_engine(_DB_URL, pool_pre_ping=True, pool_recycle=300)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_db_session():
