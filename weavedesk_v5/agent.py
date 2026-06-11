@@ -14,6 +14,7 @@ from google.adk.plugins.logging_plugin import LoggingPlugin
 # Restored all tools from V4
 from .tools import (
     fetch_user,
+    register_user,
     extract_text_from_image,
     classify_customer_message,
     validate_vendor_reply,
@@ -52,6 +53,7 @@ root_agent = LlmAgent(
     tools=[
         preload_memory,
         fetch_user,
+        register_user,
         extract_text_from_image,
         classify_customer_message,
         validate_vendor_reply,

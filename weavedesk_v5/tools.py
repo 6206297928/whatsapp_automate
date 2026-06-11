@@ -25,6 +25,26 @@ async def fetch_user(tool_context: ToolContext, phone: str) -> Dict[str, Any]:
         return {"linked": True, "linked_to": user.linked_to, "entity_id": user.entity_id, "user_id": user.user_id, "name": user.name}
     return {"linked": False, "linked_to": "unknown"}
 
+async def register_user(tool_context: ToolContext, phone: str, name: str = "WhatsApp Customer") -> Dict[str, Any]:
+    """Save a new sender as a customer so they are recognized on future messages.
+
+    Idempotent: if the phone already exists, returns the existing record instead of
+    creating a duplicate. Returns the entity_id/user_id needed to create a ticket.
+    """
+    session = get_db_session()
+    try:
+        existing = session.query(Person).filter(Person.phone == phone).first()
+        if existing:
+            return {"status": "already_registered", "linked_to": existing.linked_to,
+                    "entity_id": existing.entity_id, "user_id": existing.user_id, "name": existing.name}
+        person = Person(phone=phone, name=name, linked=True, linked_to="customer")
+        session.add(person)
+        session.commit()
+        return {"status": "registered", "linked_to": "customer",
+                "entity_id": person.entity_id, "user_id": person.user_id, "name": person.name}
+    finally:
+        session.close()
+
 async def extract_text_from_image(tool_context: ToolContext) -> str:
     image_b64 = tool_context.state.get("media:image_base64")
     if not image_b64: return "No image found."
