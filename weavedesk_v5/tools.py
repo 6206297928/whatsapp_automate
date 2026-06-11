@@ -11,7 +11,7 @@ from .prompts import IMAGE_EXTRACTOR_INSTRUCTION, CUSTOMER_CLASSIFIER_INSTRUCTIO
 async def _llm_tool_call(contents, system_instruction):
     client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
     response = await client.aio.models.generate_content(
-        model=os.environ.get("ADK_MODEL", "gemini-2.5-flash"),
+        model=os.environ.get("ADK_MODEL", "gemini-2.5-flash-lite"),
         contents=contents,
         config=genai.types.GenerateContentConfig(system_instruction=system_instruction)
     )
