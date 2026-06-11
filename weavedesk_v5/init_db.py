@@ -21,7 +21,11 @@ def main() -> None:
     try:
         seeds = [
             {"phone": "+910000000001", "name": "Demo Customer", "linked_to": "customer"},
-            {"phone": "+910000000002", "name": "Demo Vendor", "linked_to": "vendor"},
+            # Vendors — every ticket is broadcast to all of these
+            {"phone": "+910000000002", "name": "Surya Textiles", "linked_to": "vendor"},
+            {"phone": "+910000000003", "name": "Ganpati Cotton Mills", "linked_to": "vendor"},
+            {"phone": "+910000000004", "name": "Royal Denim Co", "linked_to": "vendor"},
+            {"phone": "+910000000005", "name": "Sangam Fabrics", "linked_to": "vendor"},
         ]
         for s in seeds:
             exists = session.query(Person).filter(Person.phone == s["phone"]).first()

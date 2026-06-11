@@ -63,8 +63,17 @@ async def create_ticket(tool_context: ToolContext, customer_id: str, linked_user
         t_num = generate_ticket_number(session)
         ticket = Ticket(ticket_number=t_num, customer_id=customer_id, linked_user_id=linked_user_id, customer_message=customer_message, type=ticket_type)
         session.add(ticket)
+        session.flush()  # assign ticket.id before creating vendor assignments
+
+        # Broadcast: assign this ticket to EVERY vendor (status = Pending)
+        vendors = session.query(Person).filter(Person.linked_to == "vendor").all()
+        assigned = []
+        for v in vendors:
+            session.add(TicketVendor(ticket_id=ticket.id, vendor_entity_id=v.entity_id, status="Pending"))
+            assigned.append(v.name)
         session.commit()
-        return {"ticket_number": t_num, "status": "Created"}
+        return {"ticket_number": t_num, "status": "Created",
+                "broadcast_to_vendors": len(assigned), "vendors": assigned}
     finally: session.close()
 
 async def fetch_ticket_by_number(tool_context: ToolContext, ticket_number: str) -> Dict[str, Any]:
