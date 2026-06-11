@@ -7,7 +7,7 @@ from google.adk.models.google_llm import Gemini
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.adk.memory import InMemoryMemoryService
-from google.adk.tools import load_memory, preload_memory
+from google.adk.tools import load_memory
 from google.adk.apps.app import App, EventsCompactionConfig
 from google.adk.plugins.logging_plugin import LoggingPlugin
 
@@ -54,7 +54,7 @@ root_agent = LlmAgent(
     name="WeavedeskV5_Production",
     instruction=ROOT_AGENT_INSTRUCTION,
     tools=[
-        preload_memory,
+        load_memory,
         fetch_user,
         register_user,
         extract_text_from_image,

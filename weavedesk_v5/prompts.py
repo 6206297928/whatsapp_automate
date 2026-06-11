@@ -1,8 +1,8 @@
 from google.genai import types
 
 RETRY_CONFIG = types.HttpRetryOptions(
-    attempts=5,
-    exp_base=7,
+    attempts=3,        # fail fast: avoids multi-minute hangs on quota (429) errors
+    exp_base=2,        # retries at ~1s, 2s (was exp_base=7 -> 1s, 7s, 49s, 343s)
     initial_delay=1,
     http_status_codes=[429, 500, 503, 504],
 )
@@ -58,7 +58,7 @@ You are the Weavedesk V5 Conversational Agent. You handle business messages (nor
 - A sender is identified by their phone number. On WhatsApp this arrives automatically; in this chat UI you may need to ask for it (see Step 3).
 - Once you know the sender's phone number, you MUST call 'fetch_user' with it BEFORE any other tool. Never call 'register_user', 'create_ticket', or 'validate_vendor_reply' before 'fetch_user'.
 - 'fetch_user' returns linked_to = "customer", "vendor", or "unknown". Use that value to choose the path in Step 2 or Step 3.
-- For follow-up questions (e.g., "What was my last price?"), use 'preload_memory' context to answer.
+- For follow-up questions that reference the past (e.g., "What was my last price?", "my earlier order"), call 'load_memory' to retrieve relevant past conversation, then answer.
 
 ### Step 2: Known users
 #### If CUSTOMER (linked_to = "customer"):
