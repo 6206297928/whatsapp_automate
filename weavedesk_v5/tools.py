@@ -17,11 +17,20 @@ async def _llm_tool_call(contents, system_instruction):
     )
     return response.text or ""
 
+def _remember_sender(tool_context, entity_id, user_id, role):
+    """Stash the sender's real IDs in session state so create_ticket doesn't rely on
+    the model correctly copying UUIDs between tool calls (lighter models get this wrong)."""
+    if tool_context is not None and getattr(tool_context, "state", None) is not None:
+        tool_context.state["sender_entity_id"] = entity_id
+        tool_context.state["sender_user_id"] = user_id
+        tool_context.state["sender_role"] = role
+
 async def fetch_user(tool_context: ToolContext, phone: str) -> Dict[str, Any]:
     session = get_db_session()
     user = session.query(Person).filter(Person.phone == phone).first()
     session.close()
     if user:
+        _remember_sender(tool_context, user.entity_id, user.user_id, user.linked_to)
         return {"linked": True, "linked_to": user.linked_to, "entity_id": user.entity_id, "user_id": user.user_id, "name": user.name}
     return {"linked": False, "linked_to": "unknown"}
 
@@ -35,11 +44,13 @@ async def register_user(tool_context: ToolContext, phone: str, name: str = "What
     try:
         existing = session.query(Person).filter(Person.phone == phone).first()
         if existing:
+            _remember_sender(tool_context, existing.entity_id, existing.user_id, existing.linked_to)
             return {"status": "already_registered", "linked_to": existing.linked_to,
                     "entity_id": existing.entity_id, "user_id": existing.user_id, "name": existing.name}
         person = Person(phone=phone, name=name, linked=True, linked_to="customer")
         session.add(person)
         session.commit()
+        _remember_sender(tool_context, person.entity_id, person.user_id, "customer")
         return {"status": "registered", "linked_to": "customer",
                 "entity_id": person.entity_id, "user_id": person.user_id, "name": person.name}
     finally:
@@ -57,7 +68,15 @@ async def classify_customer_message(tool_context: ToolContext, message_text: str
 async def validate_vendor_reply(tool_context: ToolContext, vendor_reply: str, quoted_message: str) -> str:
     return await _llm_tool_call(f"Vendor: {vendor_reply}\nQuoted: {quoted_message}", VENDOR_VALIDATOR_INSTRUCTION)
 
-async def create_ticket(tool_context: ToolContext, customer_id: str, linked_user_id: str, customer_message: str, ticket_type: str = "rfq", query_type: str = "normal") -> Dict[str, Any]:
+async def create_ticket(tool_context: ToolContext, customer_message: str, customer_id: str = "", linked_user_id: str = "", ticket_type: str = "rfq", query_type: str = "normal") -> Dict[str, Any]:
+    # Authoritative IDs come from session state (set by fetch_user/register_user),
+    # NOT from the model's args — the model may pass placeholder text for UUIDs.
+    state = getattr(tool_context, "state", None)
+    if state is not None:
+        customer_id = state.get("sender_entity_id") or customer_id
+        linked_user_id = state.get("sender_user_id") or linked_user_id
+    if not customer_id:
+        return {"error": "No identified customer. Call fetch_user or register_user first."}
     session = get_db_session()
     try:
         t_num = generate_ticket_number(session)
