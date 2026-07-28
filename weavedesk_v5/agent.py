@@ -47,7 +47,7 @@ async def auto_save_to_memory(callback_context):
         logging.warning(f"Skipped long-term memory save: {exc}")
 
 # Single source of truth for the model — override via the ADK_MODEL env var.
-MODEL = os.environ.get("ADK_MODEL", "gemini-2.5-flash-lite")
+MODEL = os.environ.get("ADK_MODEL", "gemini-3.1-flash-lite")
 
 # 2. Agent Definition
 root_agent = LlmAgent(
